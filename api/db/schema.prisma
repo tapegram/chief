@@ -11,8 +11,118 @@ generator client {
 // Define your own datamodels here and run `yarn redwood prisma migrate dev`
 // to create migrations for them and apply to your dev DB.
 // TODO: Please remove the following example:
-model UserExample {
-  id    Int     @id @default(autoincrement())
-  email String  @unique
-  name  String?
+// model UserExample {
+//   id    Int     @id @default(autoincrement())
+//   email String  @unique
+//   name  String?
+// }
+
+model Schedule {
+  // The full schedule
+  id               Int               @id @default(autoincrement())
+  name             String // "UIC OBGYN 2023-2024"
+  trackAssignments TrackAssignment[]
+
+  // Would we track swaps, coverage, vacactions at this level as well?
 }
+
+model Resident {
+  id    Int    @id @default(autoincrement())
+  name  String
+  email String @unique
+  year  String //PGY1, PGY2, etc.
+
+  trackAssignments TrackAssignment[]
+}
+
+model Track {
+  id   Int    @id @default(autoincrement())
+  name String
+
+  // TODO, link to the rotations in order
+
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  TrackRotation   TrackRotation[]
+  TrackAssignment TrackAssignment[]
+}
+
+model TrackRotation {
+  id   Int    @id @default(autoincrement())
+  name String
+
+  block Int // Which block in the track, used for ordering
+
+  trackId Int
+  track   Track @relation(fields: [trackId], references: [id])
+
+  rotationId Int
+  rotation   Rotation @relation(fields: [rotationId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model TrackAssignment {
+  id Int @id @default(autoincrement())
+
+  scheduleId Int
+  schedule   Schedule @relation(fields: [scheduleId], references: [id])
+
+  residentId Int
+  resident   Resident @relation(fields: [residentId], references: [id])
+
+  trackId Int
+  track   Track @relation(fields: [trackId], references: [id])
+
+  createdAt DateTime  @default(now())
+  deletedAt DateTime?
+}
+
+model Rotation {
+  id   Int    @id @default(autoincrement())
+  name String
+
+  length Int // How many weeks long is this rotation
+
+  locationId Int
+  location   Location @relation(fields: [locationId], references: [id])
+
+  // type      String // night float / day shift
+
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  TrackRotation TrackRotation[]
+}
+
+model Location {
+  id       Int        @id @default(autoincrement())
+  name     String // UIC/Christ/Swedish/etc.
+  Rotation Rotation[]
+}
+
+// To discuss: how do we handle vacations, coverage, call shifts, swaps, etc.
+// model Day // Looking at the schedule it looks like things are actually organized day by day. It might be nice to preserve that as a first class concept
+// model Vacation
+// model Holiday
+// model CallShift {
+//   id        Int      @id @default(autoincrement())
+//   name      String
+
+//   location Location
+
+//   type      String // night float / day shift
+//   residents Resident[]
+//   tracks    Track[]
+//   rotations Rotation[]
+
+//   createdAt DateTime @default(now())
+//   updatedAt DateTime @updatedAt
+// }
+
+// Some arbitrary change, maybe this can be eliminated with more specific changes like Swap, Cover, etc.
+// model Change
+// model Coverage
+// model Swap
+// model SwapRequest
